@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using JajkoBackend.Models;
+using JajkoBackend.Services;
 
 namespace JajkoBackend.Controllers;
 
@@ -8,30 +9,25 @@ namespace JajkoBackend.Controllers;
 [Route("api/[controller]")]
 public class DiscountsController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly IDiscountService _discountService;
 
-    public DiscountsController(AppDbContext db)
+    public DiscountsController(IDiscountService discountService)
     {
-        _db = db;
+        _discountService = discountService;
     }
-
 
     // GET: api/discounts
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Discount>>> GetDiscounts()
     {
-        return await _db.Discounts
-            .AsNoTracking()
-            .ToListAsync();
+        return await _discountService.GetDiscounts();
     }
 
     // GET: api/discounts/5
     [HttpGet("{id}")]
     public async Task<ActionResult<Discount>> GetDiscount(int id)
     {
-        var discount = await _db.Discounts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == id);
+        var discount = await _discountService.GetDiscount(id);
 
         if (discount == null)
         {

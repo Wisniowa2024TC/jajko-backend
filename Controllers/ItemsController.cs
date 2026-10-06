@@ -52,11 +52,44 @@ public class ItemsController : ControllerBase
             return NotFound();
         }
 
+        var now = DateTime.Now;
+
         var discount = await _db.Discounts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(d => d.ItemId == id);
+            .FirstOrDefaultAsync(d =>
+                d.ItemId == id &&
+                d.StartDate <= now &&
+                d.EndDate > now);
+
+        if (discount == null)
+        {
+            return NotFound();
+        }
 
         return discount;
+    }
+
+    // GET: api/items/5/lowest-price
+
+    [HttpGet("{id}/lowest-price")]
+    public async Task<ActionResult<decimal>> GetLowestPrice(int id)
+    {
+        var itemExists = await _db.Items
+            .AnyAsync(i => i.Id == id);
+
+        if (!itemExists)
+        {
+            return NotFound();
+        }
+
+        var thirtyDaysAgo = DateTime.Now.AddDays(-30);
+
+        var lowestPrice = await _db.PriceHistories
+            .Where(p =>
+                p.ItemId == id &&
+                p.Date >= thirtyDaysAgo)
+            .MinAsync(p => p.Price);
+
+        return lowestPrice;
     }
 
     // POST: api/items
@@ -64,6 +97,17 @@ public class ItemsController : ControllerBase
     public async Task<ActionResult<Item>> CreateItem(Item item)
     {
         _db.Items.Add(item);
+
+        await _db.SaveChangesAsync();
+
+        var priceHistory = new PriceHistory
+        {
+            ItemId = item.Id,
+            Price = item.Price,
+            Date = DateTime.Now
+        };
+
+        _db.PriceHistories.Add(priceHistory);
 
         await _db.SaveChangesAsync();
 
@@ -94,6 +138,18 @@ public class ItemsController : ControllerBase
         existingItem.Price = item.Price;
         existingItem.Allergens = item.Allergens;
         existingItem.CategoryId = item.CategoryId;
+
+        if (existingItem.Price != item.Price)
+        {
+            var priceHistory = new PriceHistory
+            {
+                Item = existingItem,
+                Price = item.Price,
+                Date = DateTime.Now
+            };
+
+            _db.PriceHistories.Add(priceHistory);
+        }
 
         await _db.SaveChangesAsync();
 

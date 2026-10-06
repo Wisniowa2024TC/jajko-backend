@@ -14,6 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<Item> Items { get; set; }
     public DbSet<Discount> Discounts { get; set; }
     public DbSet<ItemStock> ItemStocks { get; set; }
+    public DbSet<PriceHistory> PriceHistories { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,8 +85,23 @@ public class AppDbContext : DbContext
             .WithOne()
             .HasForeignKey<ItemStock>(s => s.ItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // PriceHistory
+        modelBuilder.Entity<PriceHistory>()
+            .HasKey(p => p.Id);
+
+        modelBuilder.Entity<PriceHistory>()
+            .Property(p => p.Price)
+            .HasPrecision(10, 2);
+
+        // PriceHistory -> Item
+        modelBuilder.Entity<PriceHistory>()
+            .HasOne<Item>()
+            .WithMany()
+            .HasForeignKey(p => p.ItemId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
-}
+
     public DbSet<Item> Items => Set<Item>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderedItem> OrderedItems => Set<OrderedItem>();
