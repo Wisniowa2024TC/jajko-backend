@@ -14,6 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<Item> Items { get; set; }
     public DbSet<Discount> Discounts { get; set; }
     public DbSet<ItemStock> ItemStocks { get; set; }
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderedItem> OrderedItems => Set<OrderedItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,8 +86,4 @@ public class AppDbContext : DbContext
             .HasForeignKey<ItemStock>(s => s.ItemId)
             .OnDelete(DeleteBehavior.Cascade);
     }
-}
-    public DbSet<Item> Items => Set<Item>();
-    public DbSet<Order> Orders => Set<Order>();
-    public DbSet<OrderedItem> OrderedItems => Set<OrderedItem>();
 }
