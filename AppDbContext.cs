@@ -85,3 +85,7 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
+    public DbSet<Item> Items => Set<Item>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderedItem> OrderedItems => Set<OrderedItem>();
+}

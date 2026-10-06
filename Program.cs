@@ -1,14 +1,12 @@
 using JajkoBackend.Services;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ??
-                      "Data Source = ./data/portfolier.db"));
+                      "Data Source = ./data/jajko.db"));
 
 builder.Services.AddOpenApi();
 
@@ -21,6 +19,12 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
 }
 
 app.MapControllers();
