@@ -1,3 +1,4 @@
+using JajkoBackend.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text;
@@ -12,6 +13,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddOpenApi();
 
 builder.Services.AddControllers();
+
+builder.Services.AddScoped< IDiscountService, DiscountService > ();
 
 var app = builder.Build();
 
