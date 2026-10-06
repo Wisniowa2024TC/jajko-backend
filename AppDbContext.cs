@@ -1,3 +1,4 @@
+using JajkoBackend.Models;
 using Microsoft.EntityFrameworkCore;
 
 public class AppDbContext : DbContext
