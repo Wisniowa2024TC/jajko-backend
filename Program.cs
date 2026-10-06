@@ -1,4 +1,13 @@
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
+
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ??
+                      "Data Source = ./data/portfolier.db"));
 
 builder.Services.AddOpenApi();
 

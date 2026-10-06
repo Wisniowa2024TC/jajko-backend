@@ -1,6 +1,17 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
 namespace JajkoBackend.Controllers;
 
-public class OrdersController
+[ApiController]
+[Route("/api/orders")]
+public class OrdersController : ControllerBase
 {
-    
+    [HttpGet("example")]
+    public async Task<IActionResult> Example()
+    {
+        return Ok("Hello world!");
+    }
 }
