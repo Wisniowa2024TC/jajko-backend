@@ -14,6 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<Item> Items { get; set; }
     public DbSet<Discount> Discounts { get; set; }
     public DbSet<ItemStock> ItemStocks { get; set; }
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderedItem> OrderedItems => Set<OrderedItem>();
     public DbSet<PriceHistory> PriceHistories { get; set; }
 
 
