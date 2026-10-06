@@ -6,5 +6,5 @@ public class AppDbContext : DbContext
     {
     }
 
-    //public DbSet<User> Users => Set<User>();
+    public DbSet<Item> Items => Set<Item>();
 }
