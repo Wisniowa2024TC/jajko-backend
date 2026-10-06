@@ -17,9 +17,15 @@ public class OrdersController : ControllerBase
     {
         this.db = db;
     }
+
+    [HttpPost("/add")]
+    public async Task<IActionResult> Add()
+    {
+        
+    }
     
     [HttpGet("/get/byOrderId/{orderId}")]
-    public async Task<IActionResult> Example(int orderId)
+    public async Task<IActionResult> GetByOrderId(int orderId)
     {
         Order? found = db.Orders.FirstOrDefault(order => order.Id == orderId, null);
         if (found == null)
