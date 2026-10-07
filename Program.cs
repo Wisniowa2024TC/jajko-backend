@@ -1,3 +1,4 @@
+using JajkoBackend;
 using JajkoBackend.Services;
 using Microsoft.EntityFrameworkCore;
 

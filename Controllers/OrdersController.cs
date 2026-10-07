@@ -19,7 +19,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost("/add")]
-    public async Task<IActionResult> Add()
+    public async Task<IActionResult> Add(OrderedItemsDto orderedItemsDto)
     {
         
     }
