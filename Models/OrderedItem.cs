@@ -1,5 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace JajkoBackend.Models;
 
+[PrimaryKey(nameof(OrderId), nameof(ItemId))]
 public class OrderedItem
 {
     public required int ItemId { get; set; }

@@ -48,14 +48,13 @@ public class AuthController(UserManager<ApplicationUser> userManager, SignInMana
             return Unauthorized();
         }
 
-        // Sprawdza hasło i blokadę konta bez tworzenia ciasteczka sesji
         var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
         if (!result.Succeeded)
         {
             return Unauthorized();
         }
 
-        var (token, expiresAt) = await tokenService.CreateTokenAsync(user);
+        var (token, expiresAt) = tokenService.CreateToken(user);
         return new LoginResponse(token, expiresAt);
     }
 

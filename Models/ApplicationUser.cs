@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 using Microsoft.AspNetCore.Identity;
 
 namespace JajkoBackend.Models;
 
-// Id użytownika, Email i PasswordHash są dziedziczone z IdentityUser<int>
 public class ApplicationUser : IdentityUser<int>
 {
     [MaxLength(64)]
@@ -13,5 +13,6 @@ public class ApplicationUser : IdentityUser<int>
     [MaxLength(64)]
     public required string Surname { get; set; }
 
+    [ForeignKey(nameof(Order.UserId))]
     public ICollection<Order> Orders { get; set; } = [];
 }

@@ -2,17 +2,16 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using JajkoBackend.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace JajkoBackend.Services;
 
-public class TokenService(IOptions<JwtOptions> options, UserManager<ApplicationUser> userManager)
+public class TokenService(IOptions<JwtOptions> options)
 {
     private readonly JwtOptions _jwt = options.Value;
 
-    public async Task<(string Token, DateTime ExpiresAt)> CreateTokenAsync(ApplicationUser user)
+    public (string Token, DateTime ExpiresAt) CreateToken(ApplicationUser user)
     {
         var claims = new List<Claim>
         {
@@ -22,11 +21,6 @@ public class TokenService(IOptions<JwtOptions> options, UserManager<ApplicationU
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.UserName!)
         };
-
-        foreach (var role in await userManager.GetRolesAsync(user))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-        }
 
         var expiresAt = DateTime.UtcNow.AddMinutes(_jwt.ExpiresInMinutes);
         var credentials = new SigningCredentials(
