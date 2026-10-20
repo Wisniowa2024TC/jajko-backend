@@ -20,7 +20,9 @@ public class DiscountsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Discount>>> GetDiscounts()
     {
-        return await _discountService.GetDiscounts();
+        var discounts = await _discountService.GetDiscounts();
+
+        return Ok(discounts);
     }
 
     // GET: api/discounts/5
@@ -30,50 +32,39 @@ public class DiscountsController : ControllerBase
         var discount = await _discountService.GetDiscount(id);
 
         if (discount == null)
-        {
             return NotFound();
-        }
 
-        return discount;
+        return Ok(discount);
     }
 
     // POST: api/discounts
     [HttpPost]
-    public async Task<ActionResult<Discount>> CreateDiscount(Discount discount)
+    public async Task<ActionResult<Discount>> CreateDiscount(
+        Discount discount)
     {
-        _db.Discounts.Add(discount);
-
-        await _db.SaveChangesAsync();
+        var createdDiscount =
+            await _discountService.CreateDiscount(discount);
 
         return CreatedAtAction(
             nameof(GetDiscount),
-            new { id = discount.Id },
-            discount
+            new { id = createdDiscount.Id },
+            createdDiscount
         );
     }
 
     // PUT: api/discounts/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateDiscount(int id, Discount discount)
+    public async Task<IActionResult> UpdateDiscount(
+        int id, Discount discount)
     {
         if (id != discount.Id)
-        {
             return BadRequest();
-        }
 
-        var existingDiscount = await _db.Discounts.FindAsync(id);
+        var updated =
+            await _discountService.UpdateDiscount(id, discount);
 
-        if (existingDiscount == null)
-        {
+        if (!updated)
             return NotFound();
-        }
-
-        existingDiscount.ItemId = discount.ItemId;
-        existingDiscount.StartDate = discount.StartDate;
-        existingDiscount.EndDate = discount.EndDate;
-        existingDiscount.Value = discount.Value;
-
-        await _db.SaveChangesAsync();
 
         return NoContent();
     }
@@ -82,16 +73,10 @@ public class DiscountsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteDiscount(int id)
     {
-        var discount = await _db.Discounts.FindAsync(id);
+        var deleted = await _discountService.DeleteDiscount(id);
 
-        if (discount == null)
-        {
+        if (!deleted)
             return NotFound();
-        }
-
-        _db.Discounts.Remove(discount);
-
-        await _db.SaveChangesAsync();
 
         return NoContent();
     }

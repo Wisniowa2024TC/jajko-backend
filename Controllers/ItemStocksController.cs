@@ -19,18 +19,25 @@ public class ItemStocksController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Item>>> GetItemStocks()
     {
-        return await _db.ItemStocks
+       var itemStocks = await _db.ItemStocks
             .AsNoTracking()
             .ToListAsync();
+
+        if (itemStocks == null)
+        {
+            return NotFound();
+        }
+
+        return itemStocks;
     }
 
     // GET: api/itemStocks/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Item>> GetItem(int id)
+    [HttpGet("{itemId}")]
+    public async Task<ActionResult<ItemStock>> GetItemStock(int itemId)
     {
         var itemStock = await _db.ItemStocks
             .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == id);
+            .FirstOrDefaultAsync(s => s.ItemId == itemId);
 
         if (itemStock == null)
         {
@@ -49,22 +56,22 @@ public class ItemStocksController : ControllerBase
         await _db.SaveChangesAsync();
 
         return CreatedAtAction(
-            nameof(GetItem),
-            new { id = itemStock.Id },
+            nameof(GetItemStock),
+            new { itemId = itemStock.ItemId },
             itemStock
         );
     }
 
     // PUT: api/itemStocks/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateItem(int id, Item itemStock)
+    public async Task<IActionResult> UpdateItem(int itemId, Item itemStock)
     {
-        if (id != itemStock.Id)
+        if (itemId != itemStock.ItemId)
         {
             return BadRequest();
         }
 
-        var existingItemStock = await _db.ItemStocks.FindAsync(id);
+        var existingItemStock = await _db.ItemStocks.FindAsync(itemId);
 
         if (existingItemStock == null)
         {
@@ -80,9 +87,9 @@ public class ItemStocksController : ControllerBase
 
     // DELETE: api/itemStocks/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteItem(int id)
+    public async Task<IActionResult> DeleteItem(int itemId)
     {
-        var itemStock = await _db.ItemStocks.FindAsync(id);
+        var itemStock = await _db.ItemStocks.FindAsync(itemId);
 
         if (itemStock == null)
         {

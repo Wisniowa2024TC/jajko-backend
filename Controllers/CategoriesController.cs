@@ -19,9 +19,16 @@ public class CategoriesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
     {
-        return await _db.Categories
+        var categories = await _db.Categories
             .AsNoTracking()
             .ToListAsync();
+
+        if (categories == null)
+        {
+            return NotFound();
+        }
+
+        return categories;
     }
 
     // GET: api/categories/5

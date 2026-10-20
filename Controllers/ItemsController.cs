@@ -19,9 +19,16 @@ public class ItemsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Item>>> GetItems()
     {
-        return await _db.Items
+        var items = await _db.Items
             .AsNoTracking()
             .ToListAsync();
+
+        if (items == null)
+        {
+            return NotFound();
+        }
+
+        return items;
     }
 
     // GET: api/items/5
