@@ -17,7 +17,7 @@ public class ItemStocksController : ControllerBase
 
     // GET: api/itemStocks
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Item>>> GetItemStocks()
+    public async Task<ActionResult<List<Item>>> GetItemStocks()
     {
        var itemStocks = await _db.ItemStocks
             .AsNoTracking()

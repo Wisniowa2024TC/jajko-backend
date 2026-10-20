@@ -10,10 +10,12 @@ namespace JajkoBackend.Controllers;
 public class DiscountsController : ControllerBase
 {
     private readonly IDiscountService _discountService;
-
-    public DiscountsController(IDiscountService discountService)
+    private readonly AppDbContext _db;
+    
+    public DiscountsController(IDiscountService discountService, AppDbContext db)
     {
         _discountService = discountService;
+        _db = db;
     }
 
     // GET: api/discounts
