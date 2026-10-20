@@ -1,7 +1,11 @@
+using System.Security.Claims;
 using JajkoBackend.Models;
 using JajkoBackend.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static JajkoBackend.Helpers.ClaimsPrincipalExtensions;
 
 namespace JajkoBackend.Controllers;
 
@@ -10,17 +14,25 @@ namespace JajkoBackend.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly AppDbContext db;
-
-    public OrdersController(AppDbContext db)
+    private readonly UserManager<ApplicationUser> _userManager;
+    
+    public OrdersController(AppDbContext db, UserManager<ApplicationUser> userManager)
     {
         this.db = db;
+        _userManager = userManager;
     }
 
-    [HttpPost("/add")]
-    public async Task<IActionResult> Add(OrderedItemsDto orderedItemsDto)
+    [Authorize]
+    [HttpPost("/order")]
+    public async Task<IActionResult> Order(OrderedItemsDto orderedItemsDto)
     {
-        
+        if (!int.TryParse(_userManager.GetUserId(User), out int userId))
+        {
+            return Unauthorized();
+        }; 
     }
+    
+        
     
     [HttpGet("/get/byOrderId/{orderId}")]
     public async Task<IActionResult> GetByOrderId(int orderId)

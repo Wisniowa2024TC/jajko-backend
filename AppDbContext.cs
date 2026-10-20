@@ -17,6 +17,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<int>
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderedItem> OrderedItems => Set<OrderedItem>();
     public DbSet<PriceHistory> PriceHistories { get; set; }
+    public DbSet<CartItem> CartItems { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
