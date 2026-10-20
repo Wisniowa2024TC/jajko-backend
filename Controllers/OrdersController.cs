@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using static JajkoBackend.Helpers.ClaimsPrincipalExtensions;
+using static JajkoBackend.Helpers.DiscountHelper;
 
 namespace JajkoBackend.Controllers;
 
@@ -24,14 +26,63 @@ public class OrdersController : ControllerBase
 
     [Authorize]
     [HttpPost("/order")]
-    public async Task<IActionResult> Order(OrderedItemsDto orderedItemsDto)
+    public async Task<IActionResult> Order()
     {
         if (!int.TryParse(_userManager.GetUserId(User), out int userId))
         {
             return Unauthorized();
-        }; 
+        };
+
+        List<CartItem> cartItems = await db.CartItems.Where(item => item.UserId == userId).ToListAsync();
+        
+        if (cartItems.Count == 0)
+        {
+            return NotFound("The user's cart is empty.");
+        }
+        
+        Order order = new Order { UserId = userId };
+        
+        await db.Orders.AddAsync(order);
+        
+        await db.SaveChangesAsync();
+        
+        
+        foreach (var item in cartItems)
+        {
+            double discountValue;
+            Discount? discount = await db.Discounts.
+                FirstOrDefaultAsync(d => d.ItemId == item.ItemId &&  d.ItemId == item.ItemId && d.StartDate <= DateTime.Now && DateTime.Now <= d.EndDate);
+            if (discount == null)
+            {
+                discountValue = 0;
+            }
+            else
+            {
+                discountValue = discount.Value;
+            }
+
+            await db.OrderedItems.AddAsync(new OrderedItem{Amount = item.Quantity, Discount = discountValue, ItemId = item.ItemId, OrderId = order.Id});
+        }
+
+        await db.SaveChangesAsync();
+        return Ok();
     }
-    
+
+    [HttpGet("/get")]
+    public async Task<IActionResult> GetForUser()
+    {
+        if (!int.TryParse(_userManager.GetUserId(User), out int userId))
+        {
+            return Unauthorized();
+        };
+
+        List<Order> orders = await db.Orders.Where(o => o.UserId == userId).ToListAsync();
+        List<OrderDetailsDto> orderDetailsDtos = new();
+        foreach (var order in orders)
+        {
+            
+        }
+    }
         
     
     [HttpGet("/get/byOrderId/{orderId}")]
