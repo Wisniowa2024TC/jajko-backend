@@ -1,46 +1,46 @@
 JajkoBackend – API Endpoints
 Cart
-Metoda	Endpoint	Opis	Autoryzacja
-POST	/add	Dodaje produkt do koszyka	Wymagana
+Method	Endpoint	Description	Authorization
+POST	/add	Adds an item to the cart	Required
 Categories
-Metoda	Endpoint	Opis
-GET	/api/categories	Pobiera wszystkie kategorie
-GET	/api/categories/{id}	Pobiera kategorię po ID
-GET	/api/categories/{id}/children	Pobiera kategorię potomne
-POST	/api/categories	Tworzy kategorię
-PUT	/api/categories/{id}	Aktualizuje kategorię
-DELETE	/api/categories/{id}	Usuwa kategorię
+Method	Endpoint	Description
+GET	/api/categories	Gets all categories
+GET	/api/categories/{id}	Gets a category by ID
+GET	/api/categories/{id}/children	Gets child categories recursively
+POST	/api/categories	Creates a category
+PUT	/api/categories/{id}	Updates a category
+DELETE	/api/categories/{id}	Deletes a category
 Discounts
-Metoda	Endpoint	Opis
-GET	/api/discounts	Pobiera wszystkie rabaty
-GET	/api/discounts/{id}	Pobiera rabat po ID
-POST	/api/discounts	Tworzy rabat
-PUT	/api/discounts/{id}	Aktualizuje rabat
-DELETE	/api/discounts/{id}	Usuwa rabat
+Method	Endpoint	Description
+GET	/api/discounts	Gets all discounts
+GET	/api/discounts/{id}	Gets a discount by ID
+POST	/api/discounts	Creates a discount
+PUT	/api/discounts/{id}	Updates a discount
+DELETE	/api/discounts/{id}	Deletes a discount
 Items
-Metoda	Endpoint	Opis
-GET	/api/items	Pobiera wszystkie produkty
-GET	/api/items/{id}	Pobiera produkt po ID
-GET	/api/items/{id}/discount	Pobiera aktywny rabat produktu
-GET	/api/items/{id}/lowest-price	Pobiera najniższą cenę z ostatnich 30 dni
-POST	/api/items	Tworzy produkt i zapisuje historię ceny
-PUT	/api/items/{id}	Aktualizuje produkt
-DELETE	/api/items/{id}	Usuwa produkt
+Method	Endpoint	Description
+GET	/api/items	Gets all items
+GET	/api/items/{id}	Gets an item by ID
+GET	/api/items/{id}/discount	Gets the active discount for an item
+GET	/api/items/{id}/lowest-price	Gets the lowest price in the last 30 days
+POST	/api/items	Creates an item and records its price
+PUT	/api/items/{id}	Updates an item
+DELETE	/api/items/{id}	Deletes an item
 ItemStocks
-Metoda	Endpoint	Opis
-GET	/api/itemstocks	Pobiera wszystkie stany magazynowe
-GET	/api/itemstocks/{itemId}	Pobiera stan magazynowy produktu
-POST	/api/itemstocks	Tworzy stan magazynowy
-PUT	/api/itemstocks/{id}	Aktualizuje stan magazynowy
-DELETE	/api/itemstocks/{id}	Usuwa stan magazynowy
+Method	Endpoint	Description
+GET	/api/itemstocks	Gets all stock records
+GET	/api/itemstocks/{itemId}	Gets stock for an item
+POST	/api/itemstocks	Creates a stock record
+PUT	/api/itemstocks/{id}	Updates a stock record
+DELETE	/api/itemstocks/{id}	Deletes a stock record
 Orders
-Metoda	Endpoint	Opis	Autoryzacja
-POST	/order	Tworzy zamówienie na podstawie koszyka	Wymagana
-GET	/get	Pobiera zamówienia użytkownika (implementacja niekompletna)	Brak atrybutu [Authorize]
-GET	/get/byOrderId/{orderId}	Pobiera szczegóły zamówienia po ID	Brak atrybutu [Authorize]
-Uwagi
-Endpointy Cart i Orders mają bezwzględne trasy zdefiniowane przez atrybuty zaczynające się od /. W związku z tym nie dziedziczą prefiksów /api/cart ani /api/orders.
-Endpointy Cart i Orders korzystają z identyfikatora użytkownika pobieranego z kontekstu uwierzytelnienia w wybranych metodach.
-GetForUser() nie filtruje obecnie zamówień według userId i nie zwraca pobranych pozycji zamówień.
-GetByOrderId() nie sprawdza, czy zamówienie należy do zalogowanego użytkownika.
-W Items/{id}/lowest-price brak historii cen może spowodować wyjątek przy wywołaniu MinAsync().
+Method	Endpoint	Description	Authorization
+POST	/order	Creates an order from the user's cart	Required
+GET	/get	Gets user orders (implementation incomplete)	Not specified
+GET	/get/byOrderId/{orderId}	Gets order details by ID	Not specified
+Notes
+Cart and Orders use absolute route attributes, so their endpoints do not inherit the controller prefixes.
+GetForUser() currently does not filter orders by the authenticated user's ID.
+GetByOrderId() does not verify whether the order belongs to the authenticated user.
+GetLowestPrice() may fail if no price history exists for the specified item.
+Authentication requirements depend on the [Authorize] attributes defined in the controllers.
