@@ -34,6 +34,7 @@ public class CartController: ControllerBase
         {
             return BadRequest();
         }
+        
         ItemStock? itemStock = await _db.ItemStocks.FirstOrDefaultAsync(stock => stock.ItemId == itemDto.ItemId);
         if (itemStock == null)
         {
@@ -55,4 +56,5 @@ public class CartController: ControllerBase
         await _db.SaveChangesAsync();
         return Ok();
     }
+    
 }

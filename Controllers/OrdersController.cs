@@ -76,12 +76,14 @@ public class OrdersController : ControllerBase
             return Unauthorized();
         };
 
-        List<Order> orders = await db.Orders.Where(o => o.UserId == userId).ToListAsync();
-        List<OrderDetailsDto> orderDetailsDtos = new();
-        foreach (var order in orders)
+        List<int> orderIds = db.Orders.Select(item => item.Id).ToList();
+        List<OrderedItem>  orderedItems = await db.OrderedItems.Where(item => orderIds.Contains(item.OrderId)).ToListAsync();
+
+        return Ok();
+        /*OrderDetailsDto orderDetailsDto = new
         {
-            
-        }
+
+        }*/
     }
         
     

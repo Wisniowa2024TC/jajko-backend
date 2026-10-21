@@ -17,7 +17,7 @@ public class ItemStocksController : ControllerBase
 
     // GET: api/itemStocks
     [HttpGet]
-    public async Task<ActionResult<List<Item>>> GetItemStocks()
+    public async Task<ActionResult<List<ItemStock>>> GetItemStocks()
     {
        var itemStocks = await _db.ItemStocks
             .AsNoTracking()
@@ -49,7 +49,7 @@ public class ItemStocksController : ControllerBase
 
     // POST: api/itemStocks
     [HttpPost]
-    public async Task<ActionResult<Item>> CreateItem(Item itemStock)
+    public async Task<ActionResult<ItemStock>> CreateItem(ItemStock itemStock)
     {
         _db.ItemStocks.Add(itemStock);
 
@@ -64,7 +64,7 @@ public class ItemStocksController : ControllerBase
 
     // PUT: api/itemStocks/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateItem(int itemId, Item itemStock)
+    public async Task<IActionResult> UpdateItem(int itemId, ItemStock itemStock)
     {
         if (itemId != itemStock.ItemId)
         {
