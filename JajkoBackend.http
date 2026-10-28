@@ -1,6 +1,87 @@
 @JajkoBackend_HostAddress = http://localhost:5097
 
-GET {{JajkoBackend_HostAddress}}/weatherforecast/
-Accept: application/json
+# Test: add an item to the cart, order it, then fetch the order by its id.
+# Run the requests below top to bottom ("Run all"). The first steps create
+# the data the test needs: a category, an item in stock and a test user.
 
-###
+### 1. Create a category
+POST {{JajkoBackend_HostAddress}}/api/categories
+Content-Type: application/json
+
+{ "name": "Test category" }
+
+> {% client.global.set("categoryId", response.body.id); %}
+
+### 2. Create an item
+POST {{JajkoBackend_HostAddress}}/api/items
+Content-Type: application/json
+
+{ "categoryId": {{categoryId}}, "name": "Test egg", "price": 1.5, "allergens": null }
+
+> {% client.global.set("itemId", response.body.id); %}
+
+### 3. Put the item in stock
+POST {{JajkoBackend_HostAddress}}/api/itemStocks
+Content-Type: application/json
+
+{ "itemId": {{itemId}}, "amount": 10 }
+
+### 4. Register a test user (400 when it already exists, that's fine)
+POST {{JajkoBackend_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{ "email": "test@jajko.local", "password": "Test1234!", "name": "Test", "surname": "User" }
+
+### 5. Log in
+POST {{JajkoBackend_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "test@jajko.local", "password": "Test1234!" }
+
+> {% client.global.set("token", response.body.accessToken); %}
+
+### 6. Add the item to the cart
+POST {{JajkoBackend_HostAddress}}/api/cart/add
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "itemId": {{itemId}}, "quantity": 2 }
+
+> {%
+    client.test("Item added to the cart", () => {
+        client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
+%}
+
+### 7. Order the cart
+POST {{JajkoBackend_HostAddress}}/api/orders/order
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Order placed", () => {
+        client.assert(response.status === 200, "Expected 200, got " + response.status);
+    });
+%}
+
+### 8. Find the new order's id (POST /order doesn't return it)
+GET {{JajkoBackend_HostAddress}}/api/orders/get
+Authorization: Bearer {{token}}
+
+> {%
+    const details = response.body.find(o => o.orderedItems.some(i => i.itemId == client.global.get("itemId")));
+    client.test("Order is listed", () => {
+        client.assert(details, "No order contains item " + client.global.get("itemId"));
+    });
+    client.global.set("orderId", details.order.id);
+%}
+
+### 9. Fetch the order by id
+GET {{JajkoBackend_HostAddress}}/api/orders/get/byOrderId/{{orderId}}
+
+> {%
+    client.test("Order contains the cart item", () => {
+        client.assert(response.status === 200, "Expected 200, got " + response.status);
+        const item = response.body.orderedItems.find(i => i.itemId == client.global.get("itemId"));
+        client.assert(item && item.amount === 2, "Ordered item is missing or has the wrong amount");
+    });
+%}

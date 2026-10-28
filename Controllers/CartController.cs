@@ -23,7 +23,7 @@ public class CartController: ControllerBase
 
     [Authorize]
     [HttpPost]
-    [Route("/add")]
+    [Route("add")]
     public async Task<IActionResult> Add(CartItemDto? itemDto)
     {
         if (!int.TryParse(_userManager.GetUserId(User), out int userId))
@@ -46,6 +46,14 @@ public class CartController: ControllerBase
         {
             return BadRequest("This item is sold out.");
         }
+        
+        CartItem? existingCartItem = await _db.CartItems.FirstOrDefaultAsync(item => item.UserId == userId &&  item.ItemId == itemDto.ItemId);
+        if (existingCartItem != null)
+        {
+            existingCartItem.Quantity += itemDto.Quantity;
+            await _db.SaveChangesAsync();
+            return Ok(existingCartItem.Id);
+        }
 
         Item? item = await _db.Items.FirstOrDefaultAsync(item => item.Id == itemDto.ItemId);
         if (item == null)
@@ -64,13 +72,23 @@ public class CartController: ControllerBase
     
     [Authorize]
     [HttpDelete]
-    [Route("/remove/{cartItemId}")]
+    [Route("remove/{cartItemId}")]
     public async Task<IActionResult> Remove(int cartItemId)
     {
+        if (!int.TryParse(_userManager.GetUserId(User), out int userId))
+        {
+            return Unauthorized();
+        }; 
+        
         CartItem? cartItem = await _db.CartItems.FirstOrDefaultAsync(item => item.Id == cartItemId);
         if (cartItem == null)
         {
             return CartItemNotFound();
+        }
+        
+        if (cartItem.UserId != userId)
+        {
+            return Unauthorized();
         }
 
         _db.CartItems.Remove(cartItem);
@@ -80,13 +98,23 @@ public class CartController: ControllerBase
 
     [Authorize]
     [HttpPut]
-    [Route("/update")]
+    [Route("update")]
     public async Task<IActionResult> Update(CartItemUpdateDto itemDto)
     {
+        if (!int.TryParse(_userManager.GetUserId(User), out int userId))
+        {
+            return Unauthorized();
+        }; 
+        
         CartItem? item = await _db.CartItems.FirstOrDefaultAsync(item => item.Id == itemDto.Id);
         if (item == null)
         {
             return CartItemNotFound();
+        }
+
+        if (item.UserId != userId)
+        {
+            return Unauthorized();
         }
 
         item.Quantity = itemDto.Quantity;

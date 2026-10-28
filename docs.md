@@ -110,7 +110,7 @@ All cart endpoints require login. `id` / `cartItemId` is the id of the cart entr
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/api/cart/add` | `{ itemId, quantity }` | `number`, id of the new cart entry. Sold out: `400` |
+| POST | `/api/cart/add` | `{ itemId, quantity }` | `number`, id of the cart entry. If the item is already in the cart, its quantity is increased. Sold out: `400` |
 | PUT | `/api/cart/update` | `{ id, quantity }` | `200` |
 | DELETE | `/api/cart/remove/{cartItemId}` | | `200` |
 
@@ -131,6 +131,6 @@ type OrderDetails = {
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/api/orders/order` 🔒 | | `200`, places an order from the whole cart. Empty cart: `404` |
-| GET | `/api/orders/get` 🔒 | | the user's orders (not implemented yet) |
+| POST | `/api/orders/order` 🔒 | | `200`, places an order from the whole cart and decreases the stock. Empty cart: `404`, not enough stock: `400` |
+| GET | `/api/orders/get` 🔒 | | `OrderDetails[]`, all orders of the logged-in user |
 | GET | `/api/orders/get/byOrderId/{orderId}` | | `OrderDetails` |

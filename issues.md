@@ -5,27 +5,26 @@ Places where the code doesn't match [docs.md](docs.md) or behaves unexpectedly.
 ## Blocking
 
 - **Login always returns `500`.** `TokenService` calls `GetRolesAsync` ([TokenService.cs:26](Services/TokenService.cs#L26)), but Identity is registered without roles ([Program.cs:19](Program.cs#L19)), so it throws `Store does not implement IUserRoleStore`. Nobody can get a token, so every 🔒 endpoint is unreachable. Fix: add `.AddRoles<IdentityRole<int>>()` or drop the roles loop.
-- **Cart routes ignore the `/api/cart` prefix.** The leading `/` in `[Route("/add")]`, `"/remove/{cartItemId}"` and `"/update"` ([CartController.cs:26](Controllers/CartController.cs#L26), [67](Controllers/CartController.cs#L67), [83](Controllers/CartController.cs#L83)) makes them absolute, so they're currently `/add`, `/remove/{id}` and `/update`, and `/api/cart/...` returns `404`. (Orders had the same bug and is already fixed.)
 - **No CORS.** A frontend on another origin (e.g. `http://localhost:5173`) is blocked by the browser. Use `AddCors` + `UseCors` or a dev-server proxy.
 - **`Jwt:Key` is empty** in `appsettings.json`. It's only set in `appsettings.Development.json`, so outside Development (e.g. in Docker) the app throws at startup unless `Jwt__Key` is set.
 
 ## Cart
 
-- `update` and `remove` don't check that the cart entry belongs to the logged-in user, so anyone logged in can change or delete other users' cart entries ([CartController.cs:70](Controllers/CartController.cs#L70), [86](Controllers/CartController.cs#L86)).
+- `update` and `remove` return `401` for someone else's cart entry ([CartController.cs:89](Controllers/CartController.cs#L89), [115](Controllers/CartController.cs#L115)). `401` means "not logged in", so a frontend that logs the user out on `401` would do that here. Return `404` (as for a missing entry) or `403` instead.
 - There's no endpoint to read the cart, so the frontend can't show its contents.
-- `add` creates a new entry every time instead of increasing the quantity of an existing one ([CartController.cs:56](Controllers/CartController.cs#L56)).
-- `quantity` isn't validated in `add` or `update`. It can be 0, negative or more than the stock.
-- `CartItemNotFound()` is public, so ASP.NET exposes it as an action at `/api/cart` for every HTTP method ([CartController.cs:63](Controllers/CartController.cs#L63)). Make it `private` or mark it `[NonAction]`.
+- `quantity` isn't validated in `add` or `update`. It can be 0, negative or more than the stock (including after `add` increases an existing entry).
+- `CartItemNotFound()` is public, so ASP.NET exposes it as an action at `/api/cart` for every HTTP method ([CartController.cs:71](Controllers/CartController.cs#L71)). Make it `private` or mark it `[NonAction]`.
 
 ## Orders
 
-- `GET /api/orders/get` isn't implemented. It always returns an empty `200`, and its query loads the ordered items of **all** users' orders, not only the current user's ([OrdersController.cs:80](Controllers/OrdersController.cs#L80)).
-- `GET /api/orders/get/byOrderId/{orderId}` returns `500`. EF Core can't translate `FirstOrDefault(predicate, null)` ([OrdersController.cs:94](Controllers/OrdersController.cs#L94)). Use `FirstOrDefaultAsync(order => order.Id == orderId)`.
-- `POST /api/orders/order` doesn't clear the cart, doesn't check or decrease stock, doesn't store the item price and doesn't return the new order's id. Every call creates another order from the same cart.
+- **`POST /api/orders/order` creates orders without items.** The order is added on [line 47](Controllers/OrdersController.cs#L47) but only saved at the end, so `order.Id` is still `0` when the ordered items use it ([OrdersController.cs:65](Controllers/OrdersController.cs#L65)). The items are saved with `OrderId = 0`, which nothing rejects because `OrderedItems` has no foreign key, and the stock is still decreased. Fix: call `SaveChangesAsync` after `AddAsync(order)` (line 44 is currently before it), or set the relationship through a navigation property.
+- `POST /api/orders/order` doesn't clear the cart, doesn't store the item price and doesn't return the new order's id. Every call creates another order from the same cart and decreases the stock again.
 - Orders aren't linked to users by a foreign key. `ApplicationUser.Orders` makes EF add a shadow `ApplicationUserId` column that is never set, while `Order.UserId` has no FK.
 
 ## Items
 
+- The item and discount systems don't make any sense and should be replaced with `Price` and `ReferencePrice`
+- **`POST /api/items` always returns `500`**, even though the item is saved. `PriceHistory` has an `Item` navigation and is also configured with `HasOne<Item>()` without one ([AppDbContext.cs:101](AppDbContext.cs#L101)). As a result, EF created a second required foreign key, `ItemId1`, that is never set ([AppDbContextModelSnapshot.cs:448](Migrations/AppDbContextModelSnapshot.cs#L448)), so saving the price-history row fails. Fix: `HasOne(p => p.Item)` plus a new migration.
 - `PUT /api/items/{id}` never records price history, because the new price is assigned before it's compared to the old one ([ItemsController.cs:145](Controllers/ItemsController.cs#L145), [149](Controllers/ItemsController.cs#L149)). As a result, `lowest-price` never sees price changes.
 - `GET /api/items/{id}/lowest-price` returns `500` when an item has no price-history entry in the last 30 days (`MinAsync` on an empty set, [ItemsController.cs:97](Controllers/ItemsController.cs#L97)). That covers any item whose price hasn't changed for 30 days. It should also take into account the price that was in effect when the 30-day window started.
 

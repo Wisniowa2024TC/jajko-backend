@@ -6,5 +6,6 @@ public class Item
     public int CategoryId { get; set; }
     public string Name { get; set; } = string.Empty;
     public decimal Price { get; set; }
+    public decimal ReferencePrice { get; set; }
     public string? Allergens { get; set; }
 }

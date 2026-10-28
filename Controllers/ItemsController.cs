@@ -143,6 +143,7 @@ public class ItemsController : ControllerBase
 
         existingItem.Name = item.Name;
         existingItem.Price = item.Price;
+        existingItem.ReferencePrice = item.ReferencePrice;
         existingItem.Allergens = item.Allergens;
         existingItem.CategoryId = item.CategoryId;
 
