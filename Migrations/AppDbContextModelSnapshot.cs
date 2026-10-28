@@ -179,6 +179,9 @@ namespace JajkoBackend.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("ReferencePrice")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");

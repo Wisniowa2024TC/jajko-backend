@@ -50,7 +50,8 @@ type Item = {
   id: number
   categoryId: number
   name: string              // max 64 characters
-  price: number
+  price: number             // current price
+  referencePrice: number    // crossed-out price, if higher than price the item is discounted
   allergens: string | null  // max 64 characters
 }
 ```
@@ -131,6 +132,6 @@ type OrderDetails = {
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | `/api/orders/order` 🔒 | | `200`, places an order from the whole cart and decreases the stock. Empty cart: `404`, not enough stock: `400` |
+| POST | `/api/orders/order` 🔒 | | `number`, id of the new order. Orders the whole cart, decreases the stock and empties the cart. Empty cart: `404`, not enough stock: `400` |
 | GET | `/api/orders/get` 🔒 | | `OrderDetails[]`, all orders of the logged-in user |
 | GET | `/api/orders/get/byOrderId/{orderId}` | | `OrderDetails` |

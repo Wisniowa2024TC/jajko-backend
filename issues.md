@@ -18,7 +18,7 @@ Places where the code doesn't match [docs.md](docs.md) or behaves unexpectedly.
 ## Orders
 
 - **`POST /api/orders/order` creates orders without items.** The order is added on [line 47](Controllers/OrdersController.cs#L47) but only saved at the end, so `order.Id` is still `0` when the ordered items use it ([OrdersController.cs:65](Controllers/OrdersController.cs#L65)). The items are saved with `OrderId = 0`, which nothing rejects because `OrderedItems` has no foreign key, and the stock is still decreased. Fix: call `SaveChangesAsync` after `AddAsync(order)` (line 44 is currently before it), or set the relationship through a navigation property.
-- `POST /api/orders/order` doesn't clear the cart, doesn't store the item price and doesn't return the new order's id. Every call creates another order from the same cart and decreases the stock again.
+- `POST /api/orders/order` doesn't store the price paid, so the order total can't be calculated once the item's price changes.
 - Orders aren't linked to users by a foreign key. `ApplicationUser.Orders` makes EF add a shadow `ApplicationUserId` column that is never set, while `Order.UserId` has no FK.
 
 ## Items

@@ -16,7 +16,7 @@ Content-Type: application/json
 POST {{JajkoBackend_HostAddress}}/api/items
 Content-Type: application/json
 
-{ "categoryId": {{categoryId}}, "name": "Test egg", "price": 1.5, "allergens": null }
+{ "categoryId": {{categoryId}}, "name": "Test egg", "price": 1.5, "referencePrice": 2, "allergens": null }
 
 > {% client.global.set("itemId", response.body.id); %}
 
@@ -61,21 +61,10 @@ Authorization: Bearer {{token}}
     client.test("Order placed", () => {
         client.assert(response.status === 200, "Expected 200, got " + response.status);
     });
+    client.global.set("orderId", response.body);
 %}
 
-### 8. Find the new order's id (POST /order doesn't return it)
-GET {{JajkoBackend_HostAddress}}/api/orders/get
-Authorization: Bearer {{token}}
-
-> {%
-    const details = response.body.find(o => o.orderedItems.some(i => i.itemId == client.global.get("itemId")));
-    client.test("Order is listed", () => {
-        client.assert(details, "No order contains item " + client.global.get("itemId"));
-    });
-    client.global.set("orderId", details.order.id);
-%}
-
-### 9. Fetch the order by id
+### 8. Fetch the order by id
 GET {{JajkoBackend_HostAddress}}/api/orders/get/byOrderId/{{orderId}}
 
 > {%
