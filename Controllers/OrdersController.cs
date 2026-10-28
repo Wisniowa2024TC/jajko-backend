@@ -25,7 +25,7 @@ public class OrdersController : ControllerBase
     }
 
     [Authorize]
-    [HttpPost("/order")]
+    [HttpPost("order")]
     public async Task<IActionResult> Order()
     {
         if (!int.TryParse(_userManager.GetUserId(User), out int userId))
@@ -68,7 +68,8 @@ public class OrdersController : ControllerBase
         return Ok();
     }
 
-    [HttpGet("/get")]
+    [HttpGet("get")]
+    [Authorize]
     public async Task<IActionResult> GetForUser()
     {
         if (!int.TryParse(_userManager.GetUserId(User), out int userId))
@@ -87,7 +88,7 @@ public class OrdersController : ControllerBase
     }
         
     
-    [HttpGet("/get/byOrderId/{orderId}")]
+    [HttpGet("get/byOrderId/{orderId}")]
     public async Task<IActionResult> GetByOrderId(int orderId)
     {
         Order? found = db.Orders.FirstOrDefault(order => order.Id == orderId, null);

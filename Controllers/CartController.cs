@@ -1,6 +1,7 @@
 using JajkoBackend.Models;
 using JajkoBackend.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -52,9 +53,44 @@ public class CartController: ControllerBase
             return NotFound();
         }
 
-        _db.CartItems.Add(new CartItem { ItemId = item.Id, Quantity = itemDto.Quantity, UserId = userId });
+        CartItem cartItem = new CartItem { ItemId = item.Id, Quantity = itemDto.Quantity, UserId = userId };
+        _db.CartItems.Add(cartItem);
+        await _db.SaveChangesAsync();
+        int cartItemId = cartItem.Id;
+        return Ok(cartItemId);
+    }
+
+    public IActionResult CartItemNotFound() => NotFound("No cart item with this id.");
+    
+    [Authorize]
+    [HttpDelete]
+    [Route("/remove/{cartItemId}")]
+    public async Task<IActionResult> Remove(int cartItemId)
+    {
+        CartItem? cartItem = await _db.CartItems.FirstOrDefaultAsync(item => item.Id == cartItemId);
+        if (cartItem == null)
+        {
+            return CartItemNotFound();
+        }
+
+        _db.CartItems.Remove(cartItem);
         await _db.SaveChangesAsync();
         return Ok();
     }
-    
+
+    [Authorize]
+    [HttpPut]
+    [Route("/update")]
+    public async Task<IActionResult> Update(CartItemUpdateDto itemDto)
+    {
+        CartItem? item = await _db.CartItems.FirstOrDefaultAsync(item => item.Id == itemDto.Id);
+        if (item == null)
+        {
+            return CartItemNotFound();
+        }
+
+        item.Quantity = itemDto.Quantity;
+        await _db.SaveChangesAsync();
+        return Ok();
+    }
 }
