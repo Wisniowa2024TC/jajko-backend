@@ -18,14 +18,15 @@ Places where the code doesn't match [docs.md](docs.md) or behaves unexpectedly.
 ## Orders
 
 - **`POST /api/orders/order` creates orders without items.** The order is added on [line 47](Controllers/OrdersController.cs#L47) but only saved at the end, so `order.Id` is still `0` when the ordered items use it ([OrdersController.cs:65](Controllers/OrdersController.cs#L65)). The items are saved with `OrderId = 0`, which nothing rejects because `OrderedItems` has no foreign key, and the stock is still decreased. Fix: call `SaveChangesAsync` after `AddAsync(order)` (line 44 is currently before it), or set the relationship through a navigation property.
+- `GET /api/orders/get/byOrderId/{orderId}` has no `[Authorize]` and no owner check ([OrdersController.cs:94](Controllers/OrdersController.cs#L94)), so anyone, even without logging in, can read any order by guessing its id.
 - `POST /api/orders/order` doesn't store the price paid, so the order total can't be calculated once the item's price changes.
 - Orders aren't linked to users by a foreign key. `ApplicationUser.Orders` makes EF add a shadow `ApplicationUserId` column that is never set, while `Order.UserId` has no FK.
 
 ## Items
 
-- The item and discount systems don't make any sense and should be replaced with `Price` and `ReferencePrice`
-- **`POST /api/items` always returns `500`**, even though the item is saved. `PriceHistory` has an `Item` navigation and is also configured with `HasOne<Item>()` without one ([AppDbContext.cs:101](AppDbContext.cs#L101)). As a result, EF created a second required foreign key, `ItemId1`, that is never set ([AppDbContextModelSnapshot.cs:448](Migrations/AppDbContextModelSnapshot.cs#L448)), so saving the price-history row fails. Fix: `HasOne(p => p.Item)` plus a new migration.
-- `PUT /api/items/{id}` never records price history, because the new price is assigned before it's compared to the old one ([ItemsController.cs:145](Controllers/ItemsController.cs#L145), [149](Controllers/ItemsController.cs#L149)). As a result, `lowest-price` never sees price changes.
+- `ReferencePrice` is in, but the old discount system is still there: `DiscountsController`, `GET /api/items/{id}/discount`, and `POST /api/orders/order` still looks up a `Discount` and stores it in `OrderedItem.Discount` ([OrdersController.cs:53](Controllers/OrdersController.cs#L53)).
+- **`POST /api/items` always returns `500`**, even though the item is saved. `PriceHistory` has an `Item` navigation and is also configured with `HasOne<Item>()` without one ([AppDbContext.cs:101](AppDbContext.cs#L101)). As a result, EF created a second required foreign key, `ItemId1`, that is never set ([AppDbContextModelSnapshot.cs:453](Migrations/AppDbContextModelSnapshot.cs#L453)), so saving the price-history row fails. Fix: `HasOne(p => p.Item)` plus a new migration.
+- `PUT /api/items/{id}` never records price history, because the new price is assigned before it's compared to the old one ([ItemsController.cs:145](Controllers/ItemsController.cs#L145), [150](Controllers/ItemsController.cs#L150)). As a result, `lowest-price` never sees price changes.
 - `GET /api/items/{id}/lowest-price` returns `500` when an item has no price-history entry in the last 30 days (`MinAsync` on an empty set, [ItemsController.cs:97](Controllers/ItemsController.cs#L97)). That covers any item whose price hasn't changed for 30 days. It should also take into account the price that was in effect when the 30-day window started.
 
 ## Item stocks
@@ -36,6 +37,11 @@ Places where the code doesn't match [docs.md](docs.md) or behaves unexpectedly.
 ## Categories
 
 - Deleting a category that still has subcategories or items returns `500`. The foreign key is `Restrict` and the error isn't handled ([CategoriesController.cs:139](Controllers/CategoriesController.cs#L139)).
+
+## Docker
+
+- **The container crashes on startup** with `SQLite Error 14: 'unable to open database file'`. The database path is `./data/jajko.db`, but `data/` isn't part of the publish output, so it doesn't exist in `/app`. The app also runs as `$APP_UID`, which can't create it there. Fix: create `/app/data` owned by `$APP_UID` in the Dockerfile and mount a volume on it, otherwise the database is lost with the container.
+- `Jwt__Key` has to be passed as an environment variable (see Blocking).
 
 ## Minor
 
