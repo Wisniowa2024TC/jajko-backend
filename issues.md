@@ -4,8 +4,6 @@ Places where the code doesn't match [docs.md](docs.md) or behaves unexpectedly.
 
 ## Blocking
 
-- **Login always returns `500`.** `TokenService` calls `GetRolesAsync` ([TokenService.cs:26](Services/TokenService.cs#L26)), but Identity is registered without roles ([Program.cs:19](Program.cs#L19)), so it throws `Store does not implement IUserRoleStore`. Nobody can get a token, so every 🔒 endpoint is unreachable. Fix: add `.AddRoles<IdentityRole<int>>()` or drop the roles loop.
-- **No CORS.** A frontend on another origin (e.g. `http://localhost:5173`) is blocked by the browser. Use `AddCors` + `UseCors` or a dev-server proxy.
 - **`Jwt:Key` is empty** in `appsettings.json`. It's only set in `appsettings.Development.json`, so outside Development (e.g. in Docker) the app throws at startup unless `Jwt__Key` is set.
 
 ## Cart
@@ -17,7 +15,6 @@ Places where the code doesn't match [docs.md](docs.md) or behaves unexpectedly.
 
 ## Orders
 
-- **`POST /api/orders/order` creates orders without items.** The order is added on [line 47](Controllers/OrdersController.cs#L47) but only saved at the end, so `order.Id` is still `0` when the ordered items use it ([OrdersController.cs:65](Controllers/OrdersController.cs#L65)). The items are saved with `OrderId = 0`, which nothing rejects because `OrderedItems` has no foreign key, and the stock is still decreased. Fix: call `SaveChangesAsync` after `AddAsync(order)` (line 44 is currently before it), or set the relationship through a navigation property.
 - `GET /api/orders/get/byOrderId/{orderId}` has no `[Authorize]` and no owner check ([OrdersController.cs:94](Controllers/OrdersController.cs#L94)), so anyone, even without logging in, can read any order by guessing its id.
 - `POST /api/orders/order` doesn't store the price paid, so the order total can't be calculated once the item's price changes.
 - Orders aren't linked to users by a foreign key. `ApplicationUser.Orders` makes EF add a shadow `ApplicationUserId` column that is never set, while `Order.UserId` has no FK.

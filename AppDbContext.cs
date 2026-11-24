@@ -18,6 +18,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<int>
     public DbSet<OrderedItem> OrderedItems => Set<OrderedItem>();
     public DbSet<PriceHistory> PriceHistories { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<BlichPayment> BlichPayments => Set<BlichPayment>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -88,6 +89,32 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<int>
             .WithOne()
             .HasForeignKey<ItemStock>(s => s.ItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Order
+        modelBuilder.Entity<Order>()
+            .Property(o => o.Total)
+            .HasPrecision(10, 2);
+
+        // BlichPayment
+        modelBuilder.Entity<BlichPayment>(b =>
+        {
+            b.HasKey(p => p.Id);
+            b.Property(p => p.Amount).HasPrecision(10, 2);
+            b.Property(p => p.MerchantId).HasMaxLength(64).IsRequired();
+            b.Property(p => p.FailureReason).HasMaxLength(200);
+
+            b.HasOne<Order>()
+                .WithMany()
+                .HasForeignKey(p => p.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // At most one active payment (Initiating = 0, Pending = 1) per order.
+            b.HasIndex(p => p.OrderId)
+                .IsUnique()
+                .HasFilter("\"Status\" IN (0, 1)");
+
+            b.HasIndex(p => new { p.Status, p.ExpiresAt });
+        });
 
         // PriceHistory
         modelBuilder.Entity<PriceHistory>()

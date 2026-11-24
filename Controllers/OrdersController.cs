@@ -40,12 +40,16 @@ public class OrdersController(AppDbContext db, UserManager<ApplicationUser> user
         }
 
         Order order = new Order { UserId = userId };
-        
-        await db.SaveChangesAsync();
-        
-        
+
+        // Save first so order.Id is generated before the ordered items reference it.
         await db.Orders.AddAsync(order);
-        
+        await db.SaveChangesAsync();
+
+        Dictionary<int, decimal> prices = await db.Items
+            .Where(i => cartItems.Select(c => c.ItemId).Contains(i.Id))
+            .ToDictionaryAsync(i => i.Id, i => i.Price);
+        decimal total = 0;
+
         foreach (var item in cartItems)
         {
             ItemStock itemStock = itemStocks.First(stock => item.ItemId == stock.ItemId);
@@ -61,10 +65,13 @@ public class OrdersController(AppDbContext db, UserManager<ApplicationUser> user
                 discountValue = discount.Value;
             }
 
+            total += Math.Round(prices[item.ItemId] * item.Quantity * (decimal)(1 - discountValue),
+                2, MidpointRounding.AwayFromZero);
             itemStock.Amount -= item.Quantity;
             await db.OrderedItems.AddAsync(new OrderedItem{Amount = item.Quantity, Discount = discountValue, ItemId = item.ItemId, OrderId = order.Id});
         }
 
+        order.Total = total;
         await db.CartItems.Where(item => item.UserId == userId).ForEachAsync(item => db.Remove(item));
         await db.SaveChangesAsync();
         return Ok(order.Id);

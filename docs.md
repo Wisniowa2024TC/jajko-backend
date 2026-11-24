@@ -135,3 +135,27 @@ type OrderDetails = {
 | POST | `/api/orders/order` 🔒 | | `number`, id of the new order. Orders the whole cart, decreases the stock and empties the cart. Empty cart: `404`, not enough stock: `400` |
 | GET | `/api/orders/get` 🔒 | | `OrderDetails[]`, all orders of the logged-in user |
 | GET | `/api/orders/get/byOrderId/{orderId}` | | `OrderDetails` |
+
+## BLIK payments
+
+Jajko is the merchant: the shopper gets a 6-digit code in their GoonBank app, types it at checkout, and approves the payment in that app. Jajko starts the payment at the bank and polls it. The `bank` section of `appsettings.json` sets the bank URL and our `merchantId`.
+
+```ts
+type BlichPayment = {
+  paymentId: string        // our id, not the bank's
+  orderId: number
+  status: "Initiating" | "Pending" | "Approved" | "Failed" | "Expired"
+  amount: number           // the order total, set by the server
+  expiresAt: string        // UTC; about 2 min 15 s after the start
+  orderPaid: boolean
+  failureReason: string | null
+}
+```
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| 🔒 POST | `/api/orders/{orderId}/blich-payments` | `{ blikCode: string }` (6 digits) | `202` `BlichPayment` with a `Location` header. `400` bad code or the bank refused it (`{ message }`), `404` not your order, `409` already paid or a payment is in progress, `429` more than 5 attempts a minute, `502` bank unavailable |
+| 🔒 GET | `/api/blich-payments/{paymentId}` | | `BlichPayment`, `404` if it isn't yours. Poll every ~2 s until `status` isn't `Pending` |
+| 🔒 GET | `/api/orders/{orderId}/blich-payments` | | `BlichPayment[]`, newest first |
+
+The order becomes paid (`order.paymentStatus` = `1`, `order.paidAt` set) when the bank approves, even if the checkout page was closed: a background service polls pending payments every 3 s. `Failed` covers a rejection, a decline and a bank-side timeout; `Expired` means it wasn't approved in time. The bank can't cancel a payment, so abandoning checkout just lets it expire.

@@ -1,6 +1,9 @@
 using JajkoBackend;
+using JajkoBackend.Controllers.Blich;
 using JajkoBackend.Services;
+using JajkoBackend.Services.Blich;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using System.Text;
 using JajkoBackend.Models;
 using JajkoBackend.Services;
@@ -21,6 +24,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.User.RequireUniqueEmail = true;
         options.Password.RequiredLength = 8;
     })
+    .AddRoles<IdentityRole<int>>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
@@ -57,6 +61,47 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+{
+    var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    if (origins.Length > 0)
+    {
+        policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
+    }
+}));
+
+// BLIK: bank client, payment service, background reconciliation
+builder.Services.AddOptions<BankOptions>()
+    .Bind(builder.Configuration.GetSection(BankOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddHttpClient<IBankBlikClient, BankBlikClient>((sp, client) =>
+{
+    var bank = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<BankOptions>>().Value;
+    client.BaseAddress = new Uri(bank.BaseUrl.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddScoped<IBlichPaymentService, BlichPaymentService>();
+builder.Services.AddHostedService<BlichReconciliationService>();
+
+// Limits code guessing through our checkout: 5 attempts per minute per user.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(BlichController.StartRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 builder.Services.AddOpenApi();
 
 builder.Services.AddControllers();
@@ -79,9 +124,16 @@ using (var scope = app.Services.CreateScope())
 app.MapControllers();
 app.UseHttpsRedirection();
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 
+var bankOptions = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<BankOptions>>().Value;
+app.Logger.LogInformation("BLIK bank: {BaseUrl}, merchant {MerchantId}", bankOptions.BaseUrl, bankOptions.MerchantId);
+
 app.Run();
+
+public partial class Program;
