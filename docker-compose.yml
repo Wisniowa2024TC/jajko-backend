@@ -1,0 +1,16 @@
+services:
+  jajko-backend:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"   # expose only to the reverse proxy on the host
+    environment:
+      Jwt__Key: ${JWT_KEY}                       # at least 32 bytes
+      Bank__BaseUrl: ${BANK_BASE_URL}
+      Bank__MerchantId: ${BANK_MERCHANT_ID:-JAJKO_WEBSHOP_01}
+      Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+    volumes:
+      - jajko-data:/data
+
+volumes:
+  jajko-data:
